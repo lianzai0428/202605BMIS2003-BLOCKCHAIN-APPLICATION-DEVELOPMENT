@@ -5,7 +5,12 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
-//version 1: initial version done, waiting for integration with agreementManager
+interface IAgreementManagerForToken {
+    function canStakeOnAgreement(
+        uint256 agreementId,
+        address carrier
+    ) external view returns (bool);
+}
 
 contract AGRIToken is ERC20, Ownable {
 
@@ -62,6 +67,10 @@ contract AGRIToken is ERC20, Ownable {
         onlyOwner
     {
         require(manager != address(0), "Invalid address");
+        require(
+            manager.code.length > 0,
+            "AgreementManager address has no contract"
+        );
         agreementManager = manager;
     }
 
@@ -92,9 +101,30 @@ contract AGRIToken is ERC20, Ownable {
     )
         external
     {
-        require(amount > 0, "Amount must be greater than zero");
+        require(
+            agreementManager != address(0),
+            "AgreementManager not configured"
+        );
+        require(
+            amount > 0,
+            "Amount must be greater than zero"
+        );
 
-        _transfer(msg.sender, address(this), amount);
+        require(
+            IAgreementManagerForToken(
+                agreementManager
+            ).canStakeOnAgreement(
+                agreementId,
+                msg.sender
+            ),
+            "Agreement is not available for staking"
+        );
+
+        _transfer(
+            msg.sender,
+            address(this),
+            amount
+        );
 
         stakes[agreementId][msg.sender] += amount;
 

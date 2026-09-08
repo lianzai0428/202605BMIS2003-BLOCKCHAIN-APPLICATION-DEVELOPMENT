@@ -179,12 +179,10 @@ contract EscrowManager {
         require(carrier != address(0), "Invalid carrier address");
         require(amount > 0, "Amount must be greater than zero");
 
-        IAgreementManager.Agreement memory agreement =
-            IAgreementManager(agreementManagerAddress).getAgreement(agreementId);
+        IAgreementManager.Agreement memory agreement = IAgreementManager(agreementManagerAddress).getAgreement(agreementId);
 
         require(
-            agreement.status ==
-                IAgreementManager.AgreementStatus.PendingApproval,
+            agreement.status == IAgreementManager.AgreementStatus.PendingApproval,
             "Agreement is not pending approval"
         );
         require(carrier == agreement.carrier, "Carrier does not match agreement");
@@ -201,9 +199,6 @@ contract EscrowManager {
         require(success, "Payment transfer failed");
     }
 
-    // Rule 13: An agreement may only be cancelled before the first milestone payment has been released.
-    // Returns the total milestone payment already released.
-    // AgreementManager uses this to enforce Rule 13.
     function getReleasedAmount(
         uint256 agreementId
     )
@@ -219,8 +214,7 @@ contract EscrowManager {
     function refundRemaining(uint256 agreementId) external  onlyAgreementManager {
         require(agreementManagerAddress != address(0), "AgreementManager not configured");
 
-        IAgreementManager.Agreement memory agreement =
-            IAgreementManager(agreementManagerAddress).getAgreement(agreementId);
+        IAgreementManager.Agreement memory agreement = IAgreementManager(agreementManagerAddress).getAgreement(agreementId);
 
         require(
             agreement.status == IAgreementManager.AgreementStatus.Cancelled ||
@@ -252,18 +246,14 @@ contract EscrowManager {
             "AgreementManager not configured"
         );
 
-        IAgreementManager.Agreement memory agreement =
-            IAgreementManager(agreementManagerAddress)
-                .getAgreement(agreementId);
+        IAgreementManager.Agreement memory agreement = IAgreementManager(agreementManagerAddress).getAgreement(agreementId);
 
         require(
-            agreement.status ==
-                IAgreementManager.AgreementStatus.Draft,
+            agreement.status == IAgreementManager.AgreementStatus.Draft,
             "Agreement must be Draft"
         );
 
-        uint256 amount =
-            escrowBalance[agreementId];
+        uint256 amount = escrowBalance[agreementId];
 
         require(
             amount > 0,
@@ -303,8 +293,7 @@ contract EscrowManager {
 
     function isFullyFunded(uint256 agreementId) external view returns (bool) {
         require(agreementManagerAddress != address(0), "AgreementManager not configured");
-        IAgreementManager.Agreement memory agreement =
-            IAgreementManager(agreementManagerAddress).getAgreement(agreementId);
+        IAgreementManager.Agreement memory agreement = IAgreementManager(agreementManagerAddress).getAgreement(agreementId);
         return fundedAmount[agreementId] >= agreement.escrowAmount;
     }
 

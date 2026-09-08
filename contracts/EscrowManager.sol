@@ -9,7 +9,8 @@ interface IAgreementManager {
         PendingApproval,
         Completed,
         Cancelled,
-        Expired
+        Expired,
+        Failed
     }
 
     struct Agreement {
@@ -48,6 +49,7 @@ contract EscrowManager {
     mapping(uint256 => uint256) private escrowBalance;
 
     mapping(uint256 => uint256) private fundedAmount;
+    mapping(uint256 => uint256) private releasedAmount;
 
     // -------
     // Events
@@ -67,6 +69,13 @@ contract EscrowManager {
     );
 
     event EscrowRefunded(
+        uint256 indexed agreementId,
+        address indexed shipper,
+        uint256 amount,
+        uint256 timestamp
+    );
+
+    event DraftEscrowRefunded(
         uint256 indexed agreementId,
         address indexed shipper,
         uint256 amount,
@@ -95,17 +104,33 @@ contract EscrowManager {
         _;
     }
 
+    modifier onlyAgreementManager() {
+        require(
+            msg.sender == agreementManagerAddress,
+            "Only AgreementManager"
+        );
+        _;
+    }
+
     // -------------------------------
     // Configuration (owner only)
     // -------------------------------
 
     function setAgreementManager(address _addr) external onlyOwner {
         require(_addr != address(0), "Invalid address");
+        require(
+            _addr.code.length > 0,
+            "AgreementManager address has no contract"
+        );
         agreementManagerAddress = _addr;
     }
 
     function setMilestoneManager(address _addr) external onlyOwner {
         require(_addr != address(0), "Invalid address");
+        require(
+            _addr.code.length > 0,
+            "MilestoneManager address has no contract"
+        );
         milestoneManagerAddress = _addr;
     }
 
@@ -127,6 +152,10 @@ contract EscrowManager {
         require(
             agreement.status == IAgreementManager.AgreementStatus.Draft,
             "Agreement must be in Draft status to fund"
+        );
+        require(
+            block.timestamp < agreement.deadline,
+            "Agreement deadline has passed"
         );
 
         uint256 newFundedAmount = fundedAmount[agreementId] + msg.value;
@@ -154,9 +183,9 @@ contract EscrowManager {
             IAgreementManager(agreementManagerAddress).getAgreement(agreementId);
 
         require(
-            agreement.status == IAgreementManager.AgreementStatus.Active ||
-            agreement.status == IAgreementManager.AgreementStatus.PendingApproval,
-            "Agreement is not active"
+            agreement.status ==
+                IAgreementManager.AgreementStatus.PendingApproval,
+            "Agreement is not pending approval"
         );
         require(carrier == agreement.carrier, "Carrier does not match agreement");
         require(amount <= escrowBalance[agreementId], "Insufficient escrow balance");
@@ -164,15 +193,30 @@ contract EscrowManager {
         // Effects before interaction (checks-effects-interactions)
         escrowBalance[agreementId] -= amount;
 
+        releasedAmount[agreementId] += amount;
+
         emit PaymentReleased(agreementId, carrier, amount, block.timestamp);
 
         (bool success, ) = carrier.call{value: amount}("");
         require(success, "Payment transfer failed");
     }
 
+    // Rule 13: An agreement may only be cancelled before the first milestone payment has been released.
+    // Returns the total milestone payment already released.
+    // AgreementManager uses this to enforce Rule 13.
+    function getReleasedAmount(
+        uint256 agreementId
+    )
+        external
+        view
+        returns (uint256)
+    {
+        return releasedAmount[agreementId];
+    }
+
     // Refunds whatever remains in escrow back to the Shipper once an
     // agreement has been Cancelled or has Expired.
-    function refundRemaining(uint256 agreementId) external {
+    function refundRemaining(uint256 agreementId) external  onlyAgreementManager {
         require(agreementManagerAddress != address(0), "AgreementManager not configured");
 
         IAgreementManager.Agreement memory agreement =
@@ -180,8 +224,9 @@ contract EscrowManager {
 
         require(
             agreement.status == IAgreementManager.AgreementStatus.Cancelled ||
-            agreement.status == IAgreementManager.AgreementStatus.Expired,
-            "Agreement must be Cancelled or Expired to refund"
+            agreement.status == IAgreementManager.AgreementStatus.Expired ||
+            agreement.status == IAgreementManager.AgreementStatus.Failed,
+            "Agreement must be Cancelled, Expired or Failed to refund"
         );
 
         uint256 remaining = escrowBalance[agreementId];
@@ -195,6 +240,58 @@ contract EscrowManager {
         (bool success, ) = payable(agreement.shipper).call{value: remaining}("");
         require(success, "Refund transfer failed");
     }
+
+    function refundDraftEscrow(
+        uint256 agreementId
+    )
+        external
+        onlyAgreementManager
+    {
+        require(
+            agreementManagerAddress != address(0),
+            "AgreementManager not configured"
+        );
+
+        IAgreementManager.Agreement memory agreement =
+            IAgreementManager(agreementManagerAddress)
+                .getAgreement(agreementId);
+
+        require(
+            agreement.status ==
+                IAgreementManager.AgreementStatus.Draft,
+            "Agreement must be Draft"
+        );
+
+        uint256 amount =
+            escrowBalance[agreementId];
+
+        require(
+            amount > 0,
+            "No escrow to refund"
+        );
+
+        // Reset funding state first
+        escrowBalance[agreementId] = 0;
+        fundedAmount[agreementId] = 0;
+
+        emit DraftEscrowRefunded(
+            agreementId,
+            agreement.shipper,
+            amount,
+            block.timestamp
+        );
+
+        (bool success, ) =
+            payable(agreement.shipper).call{
+                value: amount
+            }("");
+
+        require(
+            success,
+            "Draft escrow refund failed"
+        );
+    }
+
 
     // ---------------
     // View Functions

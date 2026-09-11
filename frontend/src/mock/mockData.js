@@ -1,0 +1,101 @@
+export const MOCK_ETH_TO_MYR = 18500;
+
+export const dashboardStats = {
+  totalAgreements: 8,
+  activeAgreements: 4,
+  completedAgreements: 3,
+  pendingAgreements: 1,
+  pendingMilestones: 5,
+};
+
+export const agreements = [
+  {
+    id: "AGR-001",
+    product: "Organic Tomatoes",
+    buyer: "GreenMart Sdn Bhd",
+    seller: "Fresh Farm Sdn Bhd",
+    carrier: "FastAgro Logistics",
+    amountEth: 0.42,
+    amountAgri: 2500,
+    status: "Active",
+    createdDate: "2026-09-01",
+    deliveryDate: "2026-09-18",
+    progress: 66,
+  },
+  {
+    id: "AGR-002",
+    product: "Premium Rice",
+    buyer: "Fresh Market Sdn Bhd",
+    seller: "Kedah Agro Farm",
+    carrier: "North Logistics",
+    amountEth: 0.3,
+    amountAgri: 1800,
+    status: "Pending",
+    createdDate: "2026-09-05",
+    deliveryDate: "2026-09-22",
+    progress: 20,
+  },
+  {
+    id: "AGR-003",
+    product: "Fresh Mangoes",
+    buyer: "City Grocer",
+    seller: "Tropical Harvest",
+    carrier: "Agro Express",
+    amountEth: 0.58,
+    amountAgri: 3300,
+    status: "Completed",
+    createdDate: "2026-08-20",
+    deliveryDate: "2026-09-03",
+    progress: 100,
+  },
+];
+
+export const milestones = [
+  {
+    id: "MS-001",
+    agreementId: "AGR-001",
+    title: "Goods Prepared",
+    description: "Seller confirms that the agricultural products are ready for shipment.",
+    status: "Completed",
+    dueDate: "2026-09-08",
+    currentCid: "bafybeigdyrztmockcurrentcid001",
+    previousSubmissions: [],
+  },
+  {
+    id: "MS-002",
+    agreementId: "AGR-001",
+    title: "Goods Shipped",
+    description: "Carrier submits shipping evidence after collecting the goods.",
+    status: "Proof Required",
+    dueDate: "2026-09-12",
+    currentCid: null,
+    previousSubmissions: [],
+  },
+  {
+    id: "MS-003",
+    agreementId: "AGR-001",
+    title: "Goods Delivered",
+    description: "Carrier submits final delivery evidence.",
+    status: "Pending",
+    dueDate: "2026-09-18",
+    currentCid: null,
+    previousSubmissions: [],
+  },
+  {
+    id: "MS-004",
+    agreementId: "AGR-002",
+    title: "Shipping Evidence",
+    description: "Proof of shipment for the agreement.",
+    status: "Rejected",
+    dueDate: "2026-09-17",
+    currentCid: null,
+    previousSubmissions: [
+      {
+        cid: "bafybeioldrejectedcid001",
+        status: "Rejected",
+        source: "Event Log",
+        submittedAt: "2026-09-10 14:35",
+      },
+    ],
+  },
+];

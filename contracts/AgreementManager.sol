@@ -948,6 +948,7 @@ contract AgreementManager {
                     }
                 }
             }
+        }
 
         // Event
         if (carrierFailure) {

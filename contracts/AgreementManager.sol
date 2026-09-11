@@ -65,6 +65,9 @@ interface IMilestoneManager {
     function isCarrierDeadlineFailure(
         uint256 agreementId
     ) external view returns (bool);
+    function getRemainingMilestonePercentage(
+        uint256 agreementId
+    ) external view returns (uint256);
 }
 
 contract AgreementManager {
@@ -887,25 +890,51 @@ contract AgreementManager {
             escrowManager.refundRemaining(agreementId);
         }
 
-        // Burn or return stake
-        uint256 stake = 0;
+        // Burn proportional stake on Carrier failure,
+        // otherwise return the full stake.
+        uint256 stakeBurned = 0;
 
         if (
             agreement.carrier != address(0) &&
             address(agriToken) != address(0)
         ) {
-            stake = agriToken.getStake(
+            uint256 stake = agriToken.getStake(
                 agreementId,
                 agreement.carrier
             );
 
             if (stake > 0) {
                 if (carrierFailure) {
-                    agriToken.burnStake(
-                        agreementId,
-                        agreement.carrier,
-                        stake
-                    );
+                    uint256 remainingPercentage =
+                        IMilestoneManager(
+                            milestoneManagerAddress
+                        ).getRemainingMilestonePercentage(
+                            agreementId
+                        );
+
+                    stakeBurned =
+                        (stake * remainingPercentage) / 100;
+
+                    if (stakeBurned > 0) {
+                        agriToken.burnStake(
+                            agreementId,
+                            agreement.carrier,
+                            stakeBurned
+                        );
+                    }
+
+                    uint256 remainingStake =
+                        agriToken.getStake(
+                            agreementId,
+                            agreement.carrier
+                        );
+
+                    if (remainingStake > 0) {
+                        agriToken.releaseStake(
+                            agreementId,
+                            agreement.carrier
+                        );
+                    }
                 } else {
                     agriToken.releaseStake(
                         agreementId,
@@ -920,7 +949,7 @@ contract AgreementManager {
             emit AgreementFailed(
                 agreementId,
                 agreement.carrier,
-                stake,
+                stakeBurned,
                 block.timestamp
             );
         } else {
@@ -1174,28 +1203,53 @@ contract AgreementManager {
             escrowManager.refundRemaining(agreementId);
         }
 
-        // Full slashing.
-        uint256 stake = 0;
+        // Slash stake according to unfinished milestone percentage.
+        uint256 stakeBurned = 0;
 
         if (address(agriToken) != address(0)) {
-            stake = agriToken.getStake(
+            uint256 stake = agriToken.getStake(
                 agreementId,
                 agreement.carrier
             );
 
             if (stake > 0) {
-                agriToken.burnStake(
-                    agreementId,
-                    agreement.carrier,
-                    stake
-                );
+                uint256 remainingPercentage =
+                    IMilestoneManager(
+                        milestoneManagerAddress
+                    ).getRemainingMilestonePercentage(
+                        agreementId
+                    );
+
+                stakeBurned =
+                    (stake * remainingPercentage) / 100;
+
+                if (stakeBurned > 0) {
+                    agriToken.burnStake(
+                        agreementId,
+                        agreement.carrier,
+                        stakeBurned
+                    );
+                }
+
+                uint256 remainingStake =
+                    agriToken.getStake(
+                        agreementId,
+                        agreement.carrier
+                    );
+
+                if (remainingStake > 0) {
+                    agriToken.releaseStake(
+                        agreementId,
+                        agreement.carrier
+                    );
+                }
             }
         }
 
         emit AgreementFailed(
             agreementId,
             agreement.carrier,
-            stake,
+            stakeBurned,
             block.timestamp
         );
     }

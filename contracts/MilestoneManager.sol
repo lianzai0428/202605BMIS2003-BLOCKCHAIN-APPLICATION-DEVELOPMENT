@@ -530,4 +530,24 @@ contract MilestoneManager {
         }
         return remaining;
     }
+
+    function getRemainingMilestonePercentage(
+        uint256 agreementId
+    )
+        external
+        view
+        returns (uint256)
+    {
+        uint256 index =
+            currentMilestoneIndex[agreementId];
+
+        if (index >= milestones[agreementId].length) {
+            return 0;
+        }
+
+        return _getRemainingPercentage(
+            agreementId,
+            index
+        );
+    }
 }

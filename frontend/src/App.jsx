@@ -17,6 +17,18 @@ import FundAgreement from "./pages/FundAgreement";
 import Milestones from "./pages/Milestones";
 import ProofUpload from "./pages/ProofUpload";
 
+import ApprovalTasks
+  from "./pages/ApprovalTasks";
+
+import AgreementDetails
+  from "./pages/AgreementDetails";
+
+import TransactionHistory
+  from "./pages/TransactionHistory";
+
+import RoleRoute
+  from "./components/RoleRoute";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -70,28 +82,69 @@ export default function App() {
           <Route
             path="/create-agreement"
             element={
-              <CreateAgreement />
+              <RoleRoute
+                allowedRoles={[1]}
+              >
+                <CreateAgreement />
+              </RoleRoute>
             }
           />
 
           <Route
             path="/fund-agreement"
             element={
-              <FundAgreement />
+              <RoleRoute
+                allowedRoles={[1]}
+              >
+                <FundAgreement />
+              </RoleRoute>
             }
           />
 
           <Route
             path="/milestones"
             element={
-              <Milestones />
+              <RoleRoute
+                allowedRoles={[1]}
+              >
+                <Milestones />
+              </RoleRoute>
             }
           />
 
           <Route
             path="/proof-upload"
             element={
-              <ProofUpload />
+              <RoleRoute
+                allowedRoles={[2]}
+              >
+                <ProofUpload />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/approval-tasks"
+            element={
+              <RoleRoute
+                allowedRoles={[3, 4]}
+              >
+                <ApprovalTasks />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/agreements/:agreementId"
+            element={
+              <AgreementDetails />
+            }
+          />
+
+          <Route
+            path="/transactions"
+            element={
+              <TransactionHistory />
             }
           />
         </Route>

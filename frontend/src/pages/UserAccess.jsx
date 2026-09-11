@@ -1,6 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import {
+  checkRegistration,
+  getCurrentUser,
+  registerUser,
+  getRoleName,
+  getConnectedAddress,
+} from "../services/blockchain";
+
+import {
+  setAuthenticatedWallet,
+} from "../services/session";
+
 export default function UserAccess() {
   const navigate = useNavigate();
 
@@ -19,53 +31,131 @@ export default function UserAccess() {
   const [success, setSuccess] =
     useState("");
 
-  function handleLogin() {
-    setError("");
-    setSuccess("");
+  const [loading, setLoading] =
+    useState(false);
 
-    /*
-     * Blockchain registration validation
-     * will later replace this mock step.
-     */
 
-    setSuccess(
-      "Wallet validated successfully. User registration check will be connected to the smart contract."
-    );
+  async function handleLogin() {
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+
+      const registered =
+        await checkRegistration();
+
+      if (!registered) {
+        setError(
+          "This wallet is not registered. Please register first."
+        );
+        return;
+      }
+
+      const user =
+        await getCurrentUser();
+
+      const walletAddress =
+        await getConnectedAddress();
+
+      setAuthenticatedWallet(
+        walletAddress
+      );
+
+      setSuccess(
+        `Wallet validated as ${user.name} (${getRoleName(
+          user.role
+        )}).`
+      );
+
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.reason ||
+        err.shortMessage ||
+        err.message ||
+        "Unable to validate user."
+      );
+
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleRegister(event) {
+
+  async function handleRegister(event) {
     event.preventDefault();
 
-    setError("");
-    setSuccess("");
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
 
-    if (!name.trim()) {
-      setError(
-        "Please enter a display name."
+      if (!name.trim()) {
+        setError(
+          "Please enter a display name."
+        );
+        return;
+      }
+
+      if (!role) {
+        setError(
+          "Please select a user role."
+        );
+        return;
+      }
+
+      const alreadyRegistered =
+        await checkRegistration();
+
+      if (alreadyRegistered) {
+        setError(
+          "This wallet is already registered."
+        );
+        return;
+      }
+
+      await registerUser(
+        name.trim(),
+        Number(role)
       );
-      return;
-    }
 
-    if (!role) {
-      setError(
-        "Please select a user role."
+      const user =
+        await getCurrentUser();
+
+      const walletAddress =
+        await getConnectedAddress();
+
+      setAuthenticatedWallet(
+        walletAddress
       );
-      return;
+
+      setSuccess(
+        `Registration successful as ${getRoleName(
+          user.role
+        )}.`
+      );
+
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.reason ||
+        err.shortMessage ||
+        err.message ||
+        "Registration failed."
+      );
+
+    } finally {
+      setLoading(false);
     }
-
-    /*
-     * Actual registerUser smart contract
-     * call will be connected later.
-     */
-
-    setSuccess(
-      "Registration information is valid. Smart contract registration will be integrated next."
-    );
   }
+
 
   return (
     <div className="entry-page">
       <header className="entry-navbar">
+
         <div
           className="entry-brand clickable"
           onClick={() =>
@@ -90,7 +180,9 @@ export default function UserAccess() {
         <span className="entry-step">
           Step 2 of 2
         </span>
+
       </header>
+
 
       <main className="access-page-main">
         <div className="access-card user-access-card">
@@ -107,7 +199,9 @@ export default function UserAccess() {
             </p>
           </div>
 
+
           <div className="access-tabs">
+
             <button
               type="button"
               className={
@@ -139,10 +233,13 @@ export default function UserAccess() {
             >
               Register New User
             </button>
+
           </div>
+
 
           {mode === "login" && (
             <div className="access-panel">
+
               <div className="wallet-identity-box">
                 <span>
                   Authentication Method
@@ -159,34 +256,41 @@ export default function UserAccess() {
                 </p>
               </div>
 
+
               <div className="access-validation-info">
                 <strong>
                   Existing User Validation
                 </strong>
 
                 <p>
-                  The smart contract will be
-                  checked to confirm whether
-                  this wallet address is already
-                  registered.
+                  UserRegistry will verify
+                  whether the connected wallet
+                  is registered on-chain.
                 </p>
               </div>
+
 
               <button
                 type="button"
                 className="entry-primary-button access-main-button"
                 onClick={handleLogin}
+                disabled={loading}
               >
-                Validate Existing User
+                {loading
+                  ? "Validating..."
+                  : "Validate Existing User"}
               </button>
+
             </div>
           )}
+
 
           {mode === "register" && (
             <form
               className="access-panel"
               onSubmit={handleRegister}
             >
+
               <div className="entry-form-group">
                 <label htmlFor="register-name">
                   Display Name
@@ -204,6 +308,7 @@ export default function UserAccess() {
                   }
                 />
               </div>
+
 
               <div className="entry-form-group">
                 <label htmlFor="register-role">
@@ -223,19 +328,25 @@ export default function UserAccess() {
                     Select role
                   </option>
 
-                  <option value="Buyer">
-                    Buyer
+                  <option value="1">
+                    Shipper
                   </option>
 
-                  <option value="Seller">
-                    Seller
-                  </option>
-
-                  <option value="Carrier">
+                  <option value="2">
                     Carrier
                   </option>
+
+                  <option value="3">
+                    Warehouse
+                  </option>
+
+                  <option value="4">
+                    Customs
+                  </option>
+
                 </select>
               </div>
+
 
               <div className="registration-note">
                 <strong>
@@ -244,22 +355,25 @@ export default function UserAccess() {
 
                 <p>
                   Your connected wallet address
-                  will be used as your AgriChain
-                  identity. Registration will
-                  require a MetaMask transaction
-                  when smart contract integration
-                  is enabled.
+                  will be registered through
+                  UserRegistry on Sepolia.
                 </p>
               </div>
+
 
               <button
                 type="submit"
                 className="entry-primary-button access-main-button"
+                disabled={loading}
               >
-                Register User
+                {loading
+                  ? "Registering..."
+                  : "Register User"}
               </button>
+
             </form>
           )}
+
 
           {error && (
             <div className="access-error">
@@ -267,10 +381,11 @@ export default function UserAccess() {
             </div>
           )}
 
+
           {success && (
             <div className="access-success">
               <strong>
-                Validation Successful
+                Success
               </strong>
 
               <p>
@@ -281,15 +396,14 @@ export default function UserAccess() {
                 type="button"
                 className="access-continue-link"
                 onClick={() =>
-                  navigate(
-                    "/dashboard"
-                  )
+                  navigate("/dashboard")
                 }
               >
                 Continue to Dashboard →
               </button>
             </div>
           )}
+
         </div>
       </main>
     </div>

@@ -65,11 +65,19 @@ export default function AppLayout() {
       setAgriTotalSupply("—");
     }
 
-    const registered =
+    const registration =
       await checkRegistration();
 
-    if (!registered) {
+    if (!registration.registered) {
       setUser(null);
+
+      clearAuthenticatedWallet();
+
+      navigate(
+        "/access",
+        { replace: true }
+      );
+
       return;
     }
 

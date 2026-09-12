@@ -435,8 +435,9 @@ export default function FundAgreement() {
 
                       <input
                         type="number"
-                        min="0"
-                        step="0.0001"
+                        min="0.000000000000000001"
+                        step="any"
+                        max={escrow.remainingToFundEth}
                         value={amount}
                         onChange={(
                           event

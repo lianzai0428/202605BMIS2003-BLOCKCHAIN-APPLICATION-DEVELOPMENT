@@ -9,6 +9,7 @@ import {
 
 import {
   Link,
+  useNavigate,
   useOutletContext,
   useSearchParams,
 } from "react-router-dom";
@@ -50,6 +51,7 @@ const units = [
 
 
 export default function CreateAgreement() {
+  const navigate = useNavigate();
   const {
     user,
   } = useOutletContext();
@@ -433,8 +435,9 @@ async function handleSaveTemplate() {
           }
         );
 
-        setSuccess(
-          `Agreement #${editId} updated successfully.`
+        navigate(
+          `/agreements/${editId}`,
+          { replace: true }
         );
 
         return;

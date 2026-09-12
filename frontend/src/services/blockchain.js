@@ -1439,9 +1439,13 @@ const approvers =
         await agriToken.balanceOf(
           agreement.carrier
         );
-    } catch {
-      // Leave values as zero if
-      // unavailable.
+    } catch (error) {
+        console.error(
+            "Failed to load Carrier AGRI state:",
+            error
+        );
+
+        throw error;
     }
   }
 

@@ -6,7 +6,6 @@ import {
   getCurrentUser,
   registerUser,
   getRoleName,
-  getConnectedAddress,
 } from "../services/blockchain";
 
 import {
@@ -36,15 +35,24 @@ export default function UserAccess() {
 
 
   async function handleLogin() {
-    try {
-      setLoading(true);
-      setError("");
-      setSuccess("");
+      try {
+        setLoading(true);
+        setError("");
+        setSuccess("");
 
-      const registered =
+        await window.ethereum.request({
+    method: "wallet_requestPermissions",
+    params: [
+      {
+        eth_accounts: {},
+      },
+    ],
+  });
+
+      const registration =
         await checkRegistration();
 
-      if (!registered) {
+      if (!registration.registered) {
         setError(
           "This wallet is not registered. Please register first."
         );
@@ -54,12 +62,10 @@ export default function UserAccess() {
       const user =
         await getCurrentUser();
 
-      const walletAddress =
-        await getConnectedAddress();
-
       setAuthenticatedWallet(
-        walletAddress
+        registration.address
       );
+      
 
       setSuccess(
         `Wallet validated as ${user.name} (${getRoleName(
@@ -105,10 +111,10 @@ export default function UserAccess() {
         return;
       }
 
-      const alreadyRegistered =
+      const registration =
         await checkRegistration();
 
-      if (alreadyRegistered) {
+      if (registration.registered) {
         setError(
           "This wallet is already registered."
         );
@@ -123,11 +129,8 @@ export default function UserAccess() {
       const user =
         await getCurrentUser();
 
-      const walletAddress =
-        await getConnectedAddress();
-
       setAuthenticatedWallet(
-        walletAddress
+        user.address
       );
 
       setSuccess(

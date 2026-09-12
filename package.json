@@ -1,0 +1,27 @@
+{
+  "name": "202605bmis2003-blockchain-application-development",
+  "version": "1.0.0",
+  "description": "Assignment",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lianzai0428/202605BMIS2003-BLOCKCHAIN-APPLICATION-DEVELOPMENT.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/lianzai0428/202605BMIS2003-BLOCKCHAIN-APPLICATION-DEVELOPMENT/issues"
+  },
+  "homepage": "https://github.com/lianzai0428/202605BMIS2003-BLOCKCHAIN-APPLICATION-DEVELOPMENT#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1"
+  }
+}
